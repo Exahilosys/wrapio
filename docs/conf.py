@@ -76,9 +76,9 @@ def setup(app):
     import inspect
     import sphinx.ext.autodoc
 
-    old = sphinx.ext.autodoc.ClassDocumenter.add_line
+    old_add_line = sphinx.ext.autodoc.ClassDocumenter.add_line
 
-    def new(self, line, source, *lineno):
+    def new_add_line(self, line, source, *lineno):
 
         name = inspect.stack()[1].function
 
@@ -88,8 +88,10 @@ def setup(app):
 
                 return
 
-            line = line.replace(':class:`' + project, ':class:`~')
+            if 'Bases:' in line:
 
-        return old(self, line, source, *lineno)
+                line = line.replace(':class:`', ':class:`~')
 
-    sphinx.ext.autodoc.ClassDocumenter.add_line = new
+        return old_add_line(self, line, source, *lineno)
+
+    sphinx.ext.autodoc.ClassDocumenter.add_line = new_add_line

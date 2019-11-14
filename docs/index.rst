@@ -1,7 +1,7 @@
 Reference
 =========
 
-Frequency tracking and throttling utilities.
+Handling event-based streams.
 
 .. toctree::
   :maxdepth: 1

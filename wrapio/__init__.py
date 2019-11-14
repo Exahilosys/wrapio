@@ -1,6 +1,7 @@
 import collections
 import functools
 import weakref
+import inspect
 
 from . import waits
 from . import helpers
@@ -106,6 +107,11 @@ class Handle(metaclass = HandleMeta):
 
     :param asyncio.AbstractEventLoop loop:
         Used for creating tasks from the result of callbacks.
+    :param bool aware:
+        Whether to look into the last frame's local variables to find keys for
+        creating a cached :func:`collections.namedtuple` for gathering dispatch
+        values. Only use this if all events use a constant number of
+        persistantly named values.
 
     The idea behind this is being able to make classes that handle specific
     operations on signal. First, create a class with this as its subclass.
@@ -113,7 +119,7 @@ class Handle(metaclass = HandleMeta):
     Sending data to them can be done via :meth:`Handle.invoke` after
     instantiation.
 
-    .. code-block:: python
+    .. code-block::
 
         class Impl(Handle):
 
@@ -154,13 +160,31 @@ class Handle(metaclass = HandleMeta):
     available.
     """
 
-    __slots__ = ('_loop', '_dispatch')
+    __slots__ = ('_loop', '_callback', '_aware')
 
-    def __init__(self, callback = None, loop = None):
+    def __init__(self, callback = None, aware = False, loop = None):
 
         self._loop = loop
 
-        self._dispatch = callback or _noop
+        self._callback = callback or _noop
+
+        self._aware = {} if aware else None
+
+    def _dispatch(self, name, *values):
+
+        if not self._aware is None:
+
+            try:
+
+                cls = self._aware[name]
+
+            except KeyError:
+
+                cls = self._aware[name] = helpers.subconverge(1, name, values)
+
+            values = (cls(*values),)
+
+        self._callback(name, *values)
 
     def invoke(self, name, *args, **kwargs):
 
@@ -173,7 +197,7 @@ class Handle(metaclass = HandleMeta):
         Any other parameters used will be passed to the function call.
         """
 
-        event = _events[self.__class__]
+        event = _events[self.__class__][name]
 
         result = event(self, *args, **kwargs)
 
@@ -268,7 +292,7 @@ class Track:
     def invoke(self, name, *args, **kwargs):
 
         """
-        Call all register functions against this name with the arguments.
+        Call all registered functions against this name with the arguments.
         If the ``loop`` param was used during instance creation, coroutines are
         gathered and scheduled as a future which is returned instead of a tuple
         of results.
