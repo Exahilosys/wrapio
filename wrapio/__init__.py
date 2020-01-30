@@ -2,6 +2,7 @@ import collections
 import functools
 import weakref
 import inspect
+import asyncio
 
 from . import waits
 from . import helpers
@@ -90,7 +91,9 @@ class HandleMeta(type):
 
             events.update(others)
 
-        _events[self] = events
+        if events:
+
+            _events[self] = events
 
         return self
 
@@ -217,10 +220,12 @@ class Track:
     Register callback functions against names.
 
     :param asyncio.AbstractEventLoop loop:
-        Signal the use of :py:mod:`asyncio` for concurrent operations.
+        Signal the use of :mod:`asyncio` for concurrent operations.
     """
 
-    __slots__ = ('_points', '_schedule', '_loop')
+    __slots__ = ('_points', '_schedule', '_loop', '__weakref__')
+
+    _last = None
 
     def __init__(self, loop = None):
 
@@ -279,13 +284,21 @@ class Track:
 
             callbacks = self._points[name]
 
-            callbacks.append(value)
+            def apply(func, last = None):
 
-            manage = functools.partial(callbacks.remove, value)
+                callbacks.append(func)
 
-            event = self._schedule(manage)
+                manage = functools.partial(callbacks.remove, func)
 
-            return event
+                event = self._schedule(manage, last)
+
+                if not last:
+
+                    self.__class__._last = staticmethod(func)
+
+                return event
+
+            return apply(value) if callable(value) else apply(self._last, value)
 
         return helpers.register(apply, name)
 
@@ -304,9 +317,7 @@ class Track:
 
         if self._loop:
 
-            values = map(helpers.condawait, result)
-
-            future = asyncio.gather(*values, loop = self._loop)
+            future = asyncio.gather(*result, loop = self._loop)
 
             result = asyncio.ensure_future(future, loop = self._loop)
 

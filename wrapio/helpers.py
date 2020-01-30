@@ -26,11 +26,25 @@ def subconverge(level, name, values):
 
     items = stack[level + 1].frame.f_locals.items()
 
-    space = dict(map(reversed, items))
+    product = []
 
-    count = len(space)
+    values = list(values)
 
-    product = (space[value] for value in values)
+    for (key, check) in reversed(items):
+
+        for value in values:
+
+            if check is value:
+
+                break
+
+        else:
+
+            continue
+
+        values.remove(value)
+
+        product.insert(0, key)
 
     name = ''.join(name.title().replace(' ', ''))
 

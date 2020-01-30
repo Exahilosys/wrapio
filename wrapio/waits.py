@@ -7,9 +7,11 @@ __all__ = ()
 
 def asyncio(loop):
 
-    def execute(manage):
+    def execute(manage, event = None):
 
-        event = asyncio_.Event(loop = loop)
+        if not event:
+
+            event = asyncio_.Event(loop = loop)
 
         coroutine = event.wait()
 
@@ -26,9 +28,11 @@ def asyncio(loop):
 
 def threading():
 
-    def execute(manage):
+    def execute(manage, event = None):
 
-        event = threading_.Event()
+        if not event:
+
+            event = threading_.Event()
 
         def callback():
 
