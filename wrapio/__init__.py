@@ -48,7 +48,7 @@ def event(name):
     return helpers.register(apply, name)
 
 
-_events = weakref.WeakKeyDictionary()
+events = weakref.WeakKeyDictionary()
 
 
 class HandleMeta(type):
@@ -57,9 +57,9 @@ class HandleMeta(type):
 
         space = dict(space)
 
-        events = _prepare.copy()
+        store = _prepare.copy()
 
-        for (key, value) in events.items():
+        for (key, value) in store.items():
 
             try:
 
@@ -77,23 +77,23 @@ class HandleMeta(type):
 
         _prepare.clear()
 
-        self = super().__new__(cls, name, bases, space)
-
         for base in bases:
 
             try:
 
-                others = _events[base]
+                others = events[base]
 
             except KeyError:
 
                 continue
 
-            events.update(others)
+            store.update(others)
 
-        if events:
+        self = super().__new__(cls, name, bases, space)
 
-            _events[self] = events
+        if store:
+
+            events[self] = store
 
         return self
 
@@ -200,7 +200,7 @@ class Handle(metaclass = HandleMeta):
         Any other parameters used will be passed to the function call.
         """
 
-        event = _events[self.__class__][name]
+        event = events[self.__class__][name]
 
         result = event(self, *args, **kwargs)
 
