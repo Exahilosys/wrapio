@@ -221,19 +221,31 @@ class Track:
 
     :param asyncio.AbstractEventLoop loop:
         Signal the use of :mod:`asyncio` for concurrent operations.
+    :param bool parse:
+        Whether to transform all incoming names into the same format.
     """
 
-    __slots__ = ('_points', '_schedule', '_loop', '__weakref__')
+    __slots__ = ('_points', '_schedule', '_skip', '_loop', '__weakref__')
 
     _last = None
 
-    def __init__(self, loop = None):
+    def __init__(self, loop = None, parse = True):
 
         self._points = collections.defaultdict(list)
 
         self._schedule = waits.asyncio(loop) if loop else waits.threading()
 
+        self._skip = not parse
+
         self._loop = loop
+
+    def _parse(self, name):
+
+        if self._skip:
+
+            return name
+
+        return name.replace(' ', '_').lower()
 
     def call(self, name):
 
@@ -243,6 +255,8 @@ class Track:
         """
 
         def apply(name, value):
+
+            name = self._parse(name)
 
             callbacks = self._points[name]
 
@@ -282,6 +296,8 @@ class Track:
 
         def apply(name, value):
 
+            name = self._parse(name)
+
             callbacks = self._points[name]
 
             def apply(func, last = None):
@@ -310,6 +326,8 @@ class Track:
         gathered and scheduled as a future which is returned instead of a tuple
         of results.
         """
+
+        name = self._parse(name)
 
         callbacks = self._points[name]
 
