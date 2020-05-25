@@ -11,7 +11,7 @@ from . import helpers
 __all__ = ('Handle', 'event', 'Track')
 
 
-_prepare = {}
+loading = {}
 
 
 def event(name):
@@ -41,7 +41,7 @@ def event(name):
 
     def apply(name, value):
 
-        _prepare[name] = value
+        loading[name] = value
 
         return value
 
@@ -57,7 +57,7 @@ class HandleMeta(type):
 
         space = dict(space)
 
-        store = _prepare.copy()
+        store = loading.copy()
 
         for (key, value) in store.items():
 
@@ -75,8 +75,6 @@ class HandleMeta(type):
 
             del space[key]
 
-        _prepare.clear()
-
         for base in bases:
 
             try:
@@ -91,9 +89,9 @@ class HandleMeta(type):
 
         self = super().__new__(cls, name, bases, space)
 
-        if store:
+        loading.clear()
 
-            events[self] = store
+        events[self] = store
 
         return self
 
