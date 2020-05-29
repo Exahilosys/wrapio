@@ -53,7 +53,7 @@ events = weakref.WeakKeyDictionary()
 
 class HandleMeta(type):
 
-    def __new__(cls, name, bases, space):
+    def __new__(cls, name, bases, space, **kwargs):
 
         space = dict(space)
 
@@ -87,7 +87,7 @@ class HandleMeta(type):
 
             store.update(others)
 
-        self = super().__new__(cls, name, bases, space)
+        self = super().__new__(cls, name, bases, space, **kwargs)
 
         loading.clear()
 
