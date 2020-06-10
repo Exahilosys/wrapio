@@ -233,7 +233,7 @@ class Track:
 
         return helpers.register(apply, func)
 
-    def remove(self, func, name = None, /):
+    def remove(self, func, name = None):
 
         """
         Remove the callback for the name.
