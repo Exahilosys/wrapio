@@ -40,9 +40,7 @@ def event(name):
     """
 
     def apply(name, value):
-
         loading[name] = value
-
         return value
 
     return helpers.register(apply, name)
@@ -60,31 +58,19 @@ class HandleMeta(type):
         store = loading.copy()
 
         for (key, value) in store.items():
-
             try:
-
                 other = space[key]
-
             except KeyError:
-
                 continue
-
             if not other is value:
-
                 continue
-
             del space[key]
 
         for base in bases:
-
             try:
-
                 others = events[base]
-
             except KeyError:
-
                 continue
-
             store.update(others)
 
         self = super().__new__(cls, name, bases, space, **kwargs)
@@ -106,7 +92,7 @@ class Handle(metaclass = HandleMeta):
     """
     Base class for those implementing the event protocol.
 
-    :param asyncio.AbstractEventLoop loop:
+    :param sync bool:
         Used for creating tasks from the result of callbacks.
     :param bool aware:
         Whether to look into the last frame's local variables to find keys for
@@ -161,28 +147,21 @@ class Handle(metaclass = HandleMeta):
     available.
     """
 
-    __slots__ = ('_loop', '_callback', '_aware')
+    __slots__ = ('_callback', '_aware', '_async')
 
-    def __init__(self, callback = None, aware = False, loop = None):
-
-        self._loop = loop
+    def __init__(self, callback = None, aware = False, sync = False):
 
         self._callback = callback or _noop
-
         self._aware = {} if aware else None
+        self._async = not sync
 
     def _dispatch(self, name, *values):
 
         if not self._aware is None:
-
             try:
-
                 cls = self._aware[name]
-
             except KeyError:
-
                 cls = self._aware[name] = helpers.subconverge(1, name, values)
-
             values = (cls(*values),)
 
         self._callback(name, *values)
@@ -199,12 +178,10 @@ class Handle(metaclass = HandleMeta):
         """
 
         event = events[self.__class__][name]
-
         result = event(self, *args, **kwargs)
 
-        if self._loop:
-
-            result = self._loop.create_task(result)
+        if self._async:
+            result = asyncio.create_task(result)
 
         return result
 
@@ -217,25 +194,21 @@ class Track:
     """
     Register callback functions against names.
 
-    :param asyncio.AbstractEventLoop loop:
-        Signal the use of :mod:`asyncio` for concurrent operations.
+    :param bool sync:
+        Whether to use :mod:`threading` or :mod:`asyncio` for concurrency.
     :param bool parse:
         Whether to transform all incoming names into the same format.
     """
 
-    __slots__ = ('_points', '_schedule', '_skip', '_loop', '__weakref__')
+    __slots__ = ('_points', '_schedule', '_skip', '_async', '__weakref__')
 
     _last = None
 
-    def __init__(self, loop = None, parse = True):
+    def __init__(self, sync = False, parse = True):
 
         self._points = collections.defaultdict(list)
-
-        self._schedule = waits.asyncio(loop) if loop else waits.threading()
-
+        self._schedule = waits.Threading() if sync else waits.Asyncio()
         self._skip = not parse
-
-        self._loop = loop
 
     def _parse(self, name):
 
@@ -245,7 +218,7 @@ class Track:
 
         return name.replace(' ', '_').lower()
 
-    def call(self, name):
+    def call(self, func):
 
         """
         Decorator for registering callbacks against the name. Use like
@@ -253,16 +226,36 @@ class Track:
         """
 
         def apply(name, value):
-
             name = self._parse(name)
-
             callbacks = self._points[name]
-
             callbacks.append(value)
-
             return value
 
-        return helpers.register(apply, name)
+        return helpers.register(apply, func)
+
+    def remove(self, func, name = None, /):
+
+        """
+        Remove the callback for the name.
+
+        .. code-block:: py
+
+            @track.call
+            def hello():
+                print('hi there')
+            # ...
+            track.remove(hello)
+        """
+
+        def apply(name, value):
+            name = self._parse(name)
+            callbacks = self._points[name]
+            callbacks.remove(value)
+
+        result = helpers.register(apply, name or func)
+
+        if name:
+            result() # execute the decorator, if exists
 
     def wait(self, name):
 
@@ -293,25 +286,15 @@ class Track:
         """
 
         def apply(name, value):
-
             name = self._parse(name)
-
             callbacks = self._points[name]
-
             def apply(func, last = None):
-
                 callbacks.append(func)
-
                 manage = functools.partial(callbacks.remove, func)
-
                 event = self._schedule(manage, last)
-
                 if not last:
-
                     self.__class__._last = staticmethod(func)
-
                 return event
-
             return apply(value) if callable(value) else apply(self._last, value)
 
         return helpers.register(apply, name)
@@ -320,21 +303,17 @@ class Track:
 
         """
         Call all registered functions against this name with the arguments.
-        If the ``loop`` param was used during instance creation, coroutines are
-        gathered and scheduled as a future which is returned instead of a tuple
-        of results.
+        If ``sync`` was set to false, coroutines are gathered and scheduled as a
+        future which is returned instead of a tuple of results.
         """
 
         name = self._parse(name)
-
         callbacks = self._points[name]
 
         result = tuple(callback(*args, **kwargs) for callback in callbacks)
 
-        if self._loop:
-
-            future = asyncio.gather(*result, loop = self._loop)
-
-            result = asyncio.ensure_future(future, loop = self._loop)
+        if isinstance(self._schedule, waits.Asyncio):
+            future = asyncio.gather(*result)
+            result = asyncio.ensure_future(future)
 
         return result

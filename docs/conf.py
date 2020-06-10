@@ -18,7 +18,7 @@
 
 project = 'wrapio'
 author = 'Exahilosys'
-copyright = f'2019, {author}'
+copyright = f'2021, {author}'
 
 master_doc = 'index'
 
@@ -81,15 +81,10 @@ def setup(app):
     def new_add_line(self, line, source, *lineno):
 
         name = inspect.stack()[1].function
-
         if name == 'add_directive_header':
-
             if ':class:`object`' in line:
-
                 return
-
             if 'Bases:' in line:
-
                 line = line.replace(':class:`', ':class:`~')
 
         return old_add_line(self, line, source, *lineno)

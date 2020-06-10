@@ -1,49 +1,57 @@
-import asyncio as asyncio_
-import threading as threading_
+import abc
+import asyncio
+import threading
 
 
 __all__ = ()
 
 
-def asyncio(loop):
+class Wait(abc.ABC):
 
-    def execute(manage, event = None):
+    __slots__ = ()
+
+    _Event = None
+
+    def __make(self, event):
+
+        raise NotImplementedError()
+
+    def __call__(self, manage, event = None):
 
         if not event:
+            event = self._Event()
 
-            event = asyncio_.Event(loop = loop)
+        self.__make(event)
+
+        return event
+
+
+class Asyncio(Wait):
+
+    __slots__ = ()
+
+    _Event = asyncio.Event
+
+    def __make(self, event):
 
         coroutine = event.wait()
-
         task = loop.create_task(coroutine)
 
         callback = lambda task: manage()
-
         task.add_done_callback(callback)
 
-        return event
 
-    return execute
+class Threading(Wait):
 
+    __slots__ = ()
 
-def threading():
+    _Event = threading.Event
 
-    def execute(manage, event = None):
-
-        if not event:
-
-            event = threading_.Event()
+    def __make(self, event):
 
         def callback():
-
             event.wait()
-
             manage()
 
         thread = threading_.Thread(target = callback)
-
         thread.start()
-
-        return event
-
-    return execute
