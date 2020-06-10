@@ -255,7 +255,7 @@ class Track:
         result = helpers.register(apply, name or func)
 
         if name:
-            result() # execute the decorator, if exists
+            result(func) # execute the decorator, if exists
 
     def wait(self, name):
 
