@@ -55,7 +55,16 @@ class HandleMeta(type):
 
         space = dict(space)
 
-        store = loading.copy()
+        store = {}
+
+        for base in bases:
+            try:
+                others = events[base]
+            except KeyError:
+                continue
+            store.update(others)
+
+        store.update(loading)
 
         for (key, value) in store.items():
             try:
@@ -66,13 +75,6 @@ class HandleMeta(type):
                 continue
             del space[key]
 
-        for base in bases:
-            try:
-                others = events[base]
-            except KeyError:
-                continue
-            store.update(others)
-
         self = super().__new__(cls, name, bases, space, **kwargs)
 
         loading.clear()
@@ -82,7 +84,12 @@ class HandleMeta(type):
         return self
 
 
-async def _noop(*args, **kwargs):
+def _noop(*args, **kwargs):
+
+    pass
+
+
+async def _anoop(*args, **kwargs):
 
     pass
 
@@ -92,7 +99,7 @@ class Handle(metaclass = HandleMeta):
     """
     Base class for those implementing the event protocol.
 
-    :param sync bool:
+    :param bool sync:
         Used for creating tasks from the result of callbacks.
     :param bool aware:
         Whether to look into the last frame's local variables to find keys for
@@ -151,7 +158,7 @@ class Handle(metaclass = HandleMeta):
 
     def __init__(self, callback = None, aware = False, sync = False):
 
-        self._callback = callback or _noop
+        self._callback = callback or (_noop if sync else _anoop)
         self._aware = {} if aware else None
         self._async = not sync
 
@@ -164,7 +171,9 @@ class Handle(metaclass = HandleMeta):
                 cls = self._aware[name] = helpers.subconverge(1, name, values)
             values = (cls(*values),)
 
-        self._callback(name, *values)
+        result = self._callback(name, *values)
+
+        return result
 
     def invoke(self, name, *args, **kwargs):
 
