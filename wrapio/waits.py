@@ -12,7 +12,8 @@ class Wait(abc.ABC):
 
     _Event = None
 
-    def __make(self, event):
+    @abc.abstractmethod
+    def _make(self, event):
 
         raise NotImplementedError()
 
@@ -21,7 +22,7 @@ class Wait(abc.ABC):
         if not event:
             event = self._Event()
 
-        self.__make(event)
+        self._make(manage, event)
 
         return event
 
@@ -32,10 +33,10 @@ class Asyncio(Wait):
 
     _Event = asyncio.Event
 
-    def __make(self, event):
+    def _make(self, manage, event):
 
         coroutine = event.wait()
-        task = loop.create_task(coroutine)
+        task = asyncio.create_task(coroutine)
 
         callback = lambda task: manage()
         task.add_done_callback(callback)
@@ -47,7 +48,7 @@ class Threading(Wait):
 
     _Event = threading.Event
 
-    def __make(self, event):
+    def _make(self, manage, event):
 
         def callback():
             event.wait()
