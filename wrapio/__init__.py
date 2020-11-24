@@ -156,7 +156,7 @@ class Handle(metaclass = HandleMeta):
 
     __slots__ = ('_callback', '_aware', '_async')
 
-    def __init__(self, callback = None, aware = False, sync = False):
+    def __init__(self, callback = None, aware = False, sync = True):
 
         self._callback = callback or (_noop if sync else _anoop)
         self._aware = {} if aware else None
