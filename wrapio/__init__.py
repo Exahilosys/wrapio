@@ -213,7 +213,7 @@ class Track:
 
     _last = None
 
-    def __init__(self, sync = False, parse = True):
+    def __init__(self, sync = True, parse = True):
 
         self._points = collections.defaultdict(list)
         self._schedule = waits.Threading() if sync else waits.Asyncio()
