@@ -10,7 +10,10 @@ class Wait(abc.ABC):
 
     __slots__ = ()
 
-    _Event = None
+    @abc.abstractmethod
+    def _make_event(self):
+
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def _make(self, event):
@@ -20,7 +23,7 @@ class Wait(abc.ABC):
     def __call__(self, manage, event = None):
 
         if not event:
-            event = self._Event()
+            event = self._make_event()
 
         self._make(manage, event)
 
@@ -31,12 +34,15 @@ class Asyncio(Wait):
 
     __slots__ = ()
 
-    _Event = asyncio.Event
+    def _make_event(self):
+
+        return asyncio.Event()
 
     def _make(self, manage, event):
 
         coroutine = event.wait()
-        task = asyncio.create_task(coroutine)
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(coroutine)
 
         callback = lambda task: manage()
         task.add_done_callback(callback)
@@ -46,7 +52,9 @@ class Threading(Wait):
 
     __slots__ = ()
 
-    _Event = threading.Event
+    def _make_event(self):
+
+        return threading.Event()
 
     def _make(self, manage, event):
 

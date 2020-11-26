@@ -190,7 +190,8 @@ class Handle(metaclass = HandleMeta):
         result = event(self, *args, **kwargs)
 
         if self._async:
-            result = asyncio.create_task(result)
+            loop = asyncio.get_event_loop()
+            result = loop.create_task(result)
 
         return result
 
