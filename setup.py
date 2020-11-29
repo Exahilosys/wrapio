@@ -1,12 +1,14 @@
 import setuptools
+import os
 
 with open('README.rst') as file:
-
     readme = file.read()
 
 name = 'wrapio'
 
-version = '0.3.6'
+github_version = os.getenv('GITHUB_VERSION')
+github_version_parts = github_version.split('/')
+version = github_version_parts[-1].lstrip('v')
 
 author = 'Exahilosys'
 
