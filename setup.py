@@ -6,9 +6,7 @@ with open('README.rst') as file:
 
 name = 'wrapio'
 
-github_version = os.getenv('GITHUB_VERSION')
-github_version_parts = github_version.split('/')
-version = github_version_parts[-1].lstrip('v')
+version = '0.3.8'
 
 author = 'Exahilosys'
 
