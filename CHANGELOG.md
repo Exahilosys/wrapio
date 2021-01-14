@@ -2,13 +2,17 @@
 
 #### Additions
 
-- Added `AutoHandle` with private `_invoke`.
-
 #### Changes
 
 #### Removals
 
 #### Fixes
+
+## v0.4.0
+
+#### Additions
+
+- Added `AutoHandle` with private `_invoke`.
 
 ## v0.3.7
 
