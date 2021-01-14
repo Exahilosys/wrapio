@@ -8,7 +8,7 @@ from . import waits
 from . import helpers
 
 
-__all__ = ('Handle', 'event', 'Track')
+__all__ = ('AutoHandle', 'Handle', 'event', 'Track')
 
 
 loading = {}
@@ -94,7 +94,47 @@ async def _anoop(*args, **kwargs):
     pass
 
 
-class Handle(metaclass = HandleMeta):
+class AudoHandle(metaclass = HandleMeta):
+
+    """
+    Works just like :class:`.Handle`, except :meth:`~.Handle.invoke` is private
+    as :meth:`~.AutoHandle._invoke`.
+    """
+
+    __slots__ = ('_callback', '_aware', '_async')
+
+    def __init__(self, callback = None, aware = False, sync = True):
+
+        self._callback = callback or (_noop if sync else _anoop)
+        self._aware = {} if aware else None
+        self._async = not sync
+
+    def _dispatch(self, name, *values):
+
+        if not self._aware is None:
+            try:
+                cls = self._aware[name]
+            except KeyError:
+                cls = self._aware[name] = helpers.subconverge(1, name, values)
+            values = (cls(*values),)
+
+        result = self._callback(name, *values)
+
+        return result
+
+    def _invoke(self, name, *args, **kwargs):
+
+        event = events[self.__class__][name]
+        result = event(self, *args, **kwargs)
+
+        if self._async:
+            loop = asyncio.get_event_loop()
+            result = loop.create_task(result)
+
+        return result
+
+
+class Handle(AutoHandle):
 
     """
     Base class for those implementing the event protocol.
@@ -154,28 +194,10 @@ class Handle(metaclass = HandleMeta):
     available.
     """
 
-    __slots__ = ('_callback', '_aware', '_async')
+    __slots__ = ()
 
-    def __init__(self, callback = None, aware = False, sync = True):
-
-        self._callback = callback or (_noop if sync else _anoop)
-        self._aware = {} if aware else None
-        self._async = not sync
-
-    def _dispatch(self, name, *values):
-
-        if not self._aware is None:
-            try:
-                cls = self._aware[name]
-            except KeyError:
-                cls = self._aware[name] = helpers.subconverge(1, name, values)
-            values = (cls(*values),)
-
-        result = self._callback(name, *values)
-
-        return result
-
-    def invoke(self, name, *args, **kwargs):
+    @property
+    def invoke(self):
 
         """
         Call the function that's supposed to handle the event.
@@ -186,14 +208,7 @@ class Handle(metaclass = HandleMeta):
         Any other parameters used will be passed to the function call.
         """
 
-        event = events[self.__class__][name]
-        result = event(self, *args, **kwargs)
-
-        if self._async:
-            loop = asyncio.get_event_loop()
-            result = loop.create_task(result)
-
-        return result
+        return self._invoke
 
 
 del HandleMeta

@@ -2,6 +2,8 @@
 
 #### Additions
 
+- Added `AutoHandle` with private `_invoke`.
+
 #### Changes
 
 #### Removals
