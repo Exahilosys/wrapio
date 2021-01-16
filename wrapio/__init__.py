@@ -221,27 +221,16 @@ class Track:
 
     :param bool sync:
         Whether to use :mod:`threading` or :mod:`asyncio` for concurrency.
-    :param bool parse:
-        Whether to transform all incoming names into the same format.
     """
 
-    __slots__ = ('_points', '_schedule', '_skip', '_async', '__weakref__')
+    __slots__ = ('_points', '_schedule', '_async', '__weakref__')
 
     _last = None
 
-    def __init__(self, sync = True, parse = True):
+    def __init__(self, sync = True):
 
         self._points = collections.defaultdict(list)
         self._schedule = waits.Threading() if sync else waits.Asyncio()
-        self._skip = not parse
-
-    def _parse(self, name):
-
-        if self._skip:
-
-            return name
-
-        return name.replace(' ', '_').lower()
 
     def call(self, func):
 
@@ -251,7 +240,6 @@ class Track:
         """
 
         def apply(name, value):
-            name = self._parse(name)
             callbacks = self._points[name]
             callbacks.append(value)
             return value
@@ -273,7 +261,6 @@ class Track:
         """
 
         def apply(name, value):
-            name = self._parse(name)
             callbacks = self._points[name]
             callbacks.remove(value)
 
@@ -311,7 +298,6 @@ class Track:
         """
 
         def apply(name, value):
-            name = self._parse(name)
             callbacks = self._points[name]
             def apply(func, last = None):
                 callbacks.append(func)
@@ -332,7 +318,6 @@ class Track:
         future which is returned instead of a tuple of results.
         """
 
-        name = self._parse(name)
         callbacks = self._points[name]
 
         result = tuple(callback(*args, **kwargs) for callback in callbacks)

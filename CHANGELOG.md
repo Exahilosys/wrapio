@@ -6,6 +6,8 @@
 
 #### Removals
 
+- Removed `parse` from `Handle`.
+
 #### Fixes
 
 ## v0.4.1
