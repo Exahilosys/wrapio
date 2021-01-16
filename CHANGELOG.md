@@ -8,6 +8,10 @@
 
 #### Fixes
 
+## v0.4.1
+
+#### Fixes
+
 - Fixed `AutoHandle` name error.
 
 ## v0.4.0
