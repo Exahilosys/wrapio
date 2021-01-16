@@ -8,6 +8,14 @@
 
 #### Fixes
 
+- Fixed `AutoHandle` name error.
+
+## v0.4.0
+
+#### Additions
+
+- Added `AutoHandle` with private `_invoke`.
+
 ## v0.3.7
 
 #### Fixes
