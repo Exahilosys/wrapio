@@ -6,7 +6,7 @@ with open('README.rst') as file:
 
 name = 'wrapio'
 
-version = '0.4.0'
+version = '1.0.0'
 
 author = 'Exahilosys'
 
